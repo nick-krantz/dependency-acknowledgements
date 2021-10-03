@@ -1,0 +1,17 @@
+{
+  "name": "dependency-acknowledgements",
+  "version": "1.0.0",
+  "description": "Create dependencies.md containing acknowledgements to all packages in package.json",
+  "main": "index.js",
+  "scripts": {
+    "generate-markdown": "index.js",
+    "start": "index.js"
+  },
+  "author": "Nick Krantz",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "bin": {
+    "generate-markdown": "index.js"
+  }
+}
