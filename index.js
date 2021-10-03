@@ -13,12 +13,23 @@ const basePackageObject = {
 
 const tableHeader = 'Name | Description | License \n --- | ----------- | ------- \n';
 
+/**
+ * Retrieves all package names from package.dependencies & package.devDependencies
+ * 
+ * @returns Object of arrays with dependencies & dev dependencies names
+ */
 function getAllPackages() {
   const dependencies = Object.keys(packageJSON.dependencies);
   const devDependencies = Object.keys(packageJSON.devDependencies);
   return { dependencies, devDependencies };
 }
 
+/**
+ * Uses npms.io API to fetch package information
+ * 
+ * @param {string} packageName 
+ * @returns Promise that resolves to package information object
+ */
 function getNPMPackage(packageName) {
   return new Promise((resolve, reject) => {
     https.get(`https://api.npms.io/v2/package/${encodeURIComponent(packageName)}`, (res) => {
@@ -38,6 +49,7 @@ function getNPMPackage(packageName) {
             license: response.collected.metadata.license,
           })
         } else {
+          console.warn('Could not find: ', packageName)
           resolve({
             ...basePackageObject,
             name: packageName
@@ -50,22 +62,30 @@ function getNPMPackage(packageName) {
   })
 }
 
-function getAllPackageInformation(dependencies) {
-  return new Promise((res, rej) => {
-    const promises = [];
+/**
+ * Constructs Promise array containing individual request for each package
+ * 
+ * @param {string[]} packages 
+ * @returns Promise.all for all packages
+ */
+function getAllPackageInformation(packages) {
+  const promises = [];
 
-    dependencies.forEach((dependency) => {
-      promises.push(getNPMPackage(dependency));
-    });
+  packages.forEach((package) => {
+    promises.push(getNPMPackage(package));
+  });
 
-    Promise.all(promises).then((packageDetails) => {
-      res(packageDetails);
-    }).catch((err) => {
-      rej(err);
-    })
+  return Promise.all(promises).then((packageDetails) => {
+    return (packageDetails);
   })
 }
 
+/**
+ * Constructs markdown table
+ * 
+ * @param {*} packageArray 
+ * @returns string version of markdown table
+ */
 function createMarkdownTableString(packageArray) {
   let table = tableHeader;
   packageArray.forEach(p => {
@@ -74,6 +94,13 @@ function createMarkdownTableString(packageArray) {
   return table;
 }
 
+/**
+ * Constructs full content of dependencies.md
+ * 
+ * @param {*} runtimeTable runtime dependency markdown table
+ * @param {*} devTable development dependency markdown table
+ * @returns 
+ */
 function createMarkdown(runtimeTable, devTable) {
   return `
 ## Dependencies 
@@ -89,6 +116,11 @@ ${runtimeTable}
 ${devTable}`;
 }
 
+/**
+ * Write markdown string to ./dependencies.md
+ * 
+ * @param {string} markdown 
+ */
 function writeMarkdownToFile(markdown) {
   fs.writeFile("./dependencies.md", markdown, function (err) {
     if (err) {
@@ -103,9 +135,14 @@ function writeMarkdownToFile(markdown) {
   try {
     const runtime = await getAllPackageInformation(dependencies);
     const devDep = await getAllPackageInformation(devDependencies);
+
+    console.log(`Found ${runtime.length} packages in dependencies`);
+    console.log(`Found ${devDep.length} packages in dev dependencies`);
+
     const runtimeTable = createMarkdownTableString(runtime);
     const devTable = createMarkdownTableString(devDep);
     const markdown = createMarkdown(runtimeTable, devTable);
+
     writeMarkdownToFile(markdown)
   } catch (e) {
     throw new Error(e);
