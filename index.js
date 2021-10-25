@@ -2,16 +2,40 @@
 
 const https = require('https');
 const fs = require('fs');
+const readline = require('readline');
 const packageJSON = require(process.cwd() + '/package.json');
+const constants = require('./constants');
+const getExistingPackages = require('./getExistingPackages');
 
-const basePackageObject = {
-  name: '',
-  npmLink: '',
-  description: '',
-  license: '',
+let existingREADMEInfo = {}
+
+async function promptForNewDependencyTables() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise(function (resolve, reject) {
+    console.log('There were no dependencies found in the README.md');
+    rl.question('Would you like to append the dependency tables to README.md? (Y/N) ', async function (userInput) {
+      rl.close();
+
+      const answer = userInput.trim().toLowerCase();
+      if (answer === '') {
+        return resolve(true);
+
+      }
+
+      if (answer === 'y' || answer === 'yes') {
+        return resolve(true);
+      }
+
+      if (answer === 'n' || answer === 'no') {
+        return resolve(false);
+      }
+    });
+  });
 }
-
-const tableHeader = 'Name | Description | License \n --- | ----------- | ------- \n';
 
 /**
  * Retrieves all package names from package.dependencies & package.devDependencies
@@ -32,6 +56,13 @@ function getAllPackages() {
  */
 function getNPMPackage(packageName) {
   return new Promise((resolve, reject) => {
+
+    // If the README already contained package information, return it.
+    if (existingREADMEInfo[ packageName ]) {
+      resolve(existingREADMEInfo[ packageName ]);
+      return;
+    }
+
     https.get(`https://api.npms.io/v2/package/${encodeURIComponent(packageName)}`, (res) => {
       let data = [];
 
@@ -51,7 +82,7 @@ function getNPMPackage(packageName) {
         } else {
           console.warn('Could not find: ', packageName)
           resolve({
-            ...basePackageObject,
+            ...constants.BASE_DEPENDENCY_OBJECT,
             name: packageName
           })
         }
@@ -87,7 +118,7 @@ function getAllPackageInformation(packages) {
  * @returns string version of markdown table
  */
 function createMarkdownTableString(packageArray) {
-  let table = tableHeader;
+  let table = constants.TABLE_HEADER;
   packageArray.forEach(p => {
     table += `[${p.name}](${p.npmLink})|${p.description}|${p.license}\n`
   });
@@ -103,47 +134,56 @@ function createMarkdownTableString(packageArray) {
  */
 function createMarkdown(runtimeTable, devTable) {
   return `
-## Dependencies 
+${constants.DEPENDENCY_HEADING}
     
 The source of truth for this list is [package.json](./package.json)
 
-### Runtime Dependencies
+${constants.RUNTIME_DEPENDENCY_HEADING}
 
 ${runtimeTable}
 
-### Development Dependencies
+${constants.DEVELOPMENT_DEPENDENCY_HEADING}
 
 ${devTable}`;
 }
 
 /**
- * Write markdown string to ./dependencies.md
+ * Append full dependency markdown to README.md
  * 
  * @param {string} markdown 
  */
-function writeMarkdownToFile(markdown) {
-  fs.writeFile("./dependencies.md", markdown, function (err) {
+function appendMarkdownToREADME(markdown) {
+  fs.appendFile("./README.md", markdown, function (err) {
     if (err) {
       return console.log(err);
     }
-    console.log("wrote to ./dependencies.md");
+    console.log("appended dependency tables to ./README.md");
   });
 }
 
 (async () => {
+  let addDependenciesToREADME = false;
   const { dependencies, devDependencies } = getAllPackages();
   try {
+    existingREADMEInfo = await getExistingPackages();
+    if (Object.keys(existingREADMEInfo)) {
+      addDependenciesToREADME = await promptForNewDependencyTables();
+    }
     const runtime = await getAllPackageInformation(dependencies);
     const devDep = await getAllPackageInformation(devDependencies);
 
     console.log(`Found ${runtime.length} packages in dependencies`);
     console.log(`Found ${devDep.length} packages in dev dependencies`);
 
-    const runtimeTable = createMarkdownTableString(runtime);
-    const devTable = createMarkdownTableString(devDep);
-    const markdown = createMarkdown(runtimeTable, devTable);
+    if (addDependenciesToREADME) {
+      const runtimeTable = createMarkdownTableString(runtime);
+      const devTable = createMarkdownTableString(devDep);
+      const markdown = createMarkdown(runtimeTable, devTable);
 
-    writeMarkdownToFile(markdown)
+      appendMarkdownToREADME(markdown)
+    }
+
+
   } catch (e) {
     throw new Error(e);
   }
