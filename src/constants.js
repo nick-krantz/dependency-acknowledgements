@@ -1,3 +1,5 @@
+const types = require('./types');
+
 /**
  * Regular expression that will match a markdown table row of 3 or more columns.
  * 
@@ -26,7 +28,7 @@ const REGEX_DEPENDENCY_URL = /\((.*?)\)/;
  * Markdown header of the dependency table.
  * 
  */
-const TABLE_HEADER = 'Name | Description | License \n --- | ----------- | ------- \n';
+const TABLE_HEADER = 'Name | Description | License \n---- | ----------- | ------- \n';
 
 
 const DEPENDENCY_HEADING = '## Dependencies ';
@@ -43,6 +45,8 @@ const DEVELOPMENT_DEPENDENCY_HEADING = '### Development Dependencies';
 
 /**
  * Empty object that represent all properties of a dependency.
+ * 
+ * @type {types.Dependency}
  */
 const BASE_DEPENDENCY_OBJECT = {
   name: '',

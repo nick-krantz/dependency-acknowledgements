@@ -1,189 +1,78 @@
 #!/usr/bin/env node
 
-const https = require('https');
-const fs = require('fs');
-const readline = require('readline');
-const packageJSON = require(process.cwd() + '/package.json');
-const constants = require('./constants');
-const getExistingPackages = require('./getExistingPackages');
-
-let existingREADMEInfo = {}
-
-async function promptForNewDependencyTables() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  return new Promise(function (resolve, reject) {
-    console.log('There were no dependencies found in the README.md');
-    rl.question('Would you like to append the dependency tables to README.md? (Y/N) ', async function (userInput) {
-      rl.close();
-
-      const answer = userInput.trim().toLowerCase();
-      if (answer === '') {
-        return resolve(true);
-
-      }
-
-      if (answer === 'y' || answer === 'yes') {
-        return resolve(true);
-      }
-
-      if (answer === 'n' || answer === 'no') {
-        return resolve(false);
-      }
-    });
-  });
-}
+const appendDependencies = require('./src/appendDependencies');
+const fetchAllDependencyInformation = require('./src/fetchAllDependencyInformation');
+const getDependenciesFromREADME = require('./src/getDependenciesFromREADME');
+const overwriteExistingDependencyTables = require('./src/overwriteExistingDependencyTables');
+const promptForNewDependencyTables = require('./src/promptForNewDependencyTables');
+const types = require('./src/types');
+const utils = require('./src/utils');
 
 /**
- * Retrieves all package names from package.dependencies & package.devDependencies
- * 
- * @returns Object of arrays with dependencies & dev dependencies names
+ * Existing dependency information from README.
+ *
+ * Existing information will be used instead of fetching new info.
+ *
+ * @type {{[name: string]: types.Dependency}}
  */
-function getAllPackages() {
-  const dependencies = Object.keys(packageJSON.dependencies);
-  const devDependencies = Object.keys(packageJSON.devDependencies);
-  return { dependencies, devDependencies };
-}
+let existingDependenciesFromREADME = {};
 
 /**
- * Uses npms.io API to fetch package information
+ * When there isn't dependency tables found in the README.md,
+ * prompt the user to see if they would like to add them.
  * 
- * @param {string} packageName 
- * @returns Promise that resolves to package information object
+ * Options:
+ * 
+ * 1. 'yes' - User wants to append tables to README.md.
+ * 2. 'no' - There were existing tables found, overwrite them.
+ * 3. 'exit' - There were no existing tables found & user responded no to appending them. 
+ * 
+ * @type {types.PromptResponse}
  */
-function getNPMPackage(packageName) {
-  return new Promise((resolve, reject) => {
+let addDependenciesToREADME;
 
-    // If the README already contained package information, return it.
-    if (existingREADMEInfo[ packageName ]) {
-      resolve(existingREADMEInfo[ packageName ]);
-      return;
-    }
-
-    https.get(`https://api.npms.io/v2/package/${encodeURIComponent(packageName)}`, (res) => {
-      let data = [];
-
-      res.on('data', chunk => {
-        data.push(chunk);
-      });
-
-      res.on('end', () => {
-        const response = JSON.parse(Buffer.concat(data).toString());
-        if (!response.code) {
-          resolve({
-            name: response.collected.metadata.name,
-            npmLink: decodeURIComponent(response.collected.metadata.links.npm),
-            description: response.collected.metadata.description,
-            license: response.collected.metadata.license,
-          })
-        } else {
-          console.warn('Could not find: ', packageName)
-          resolve({
-            ...constants.BASE_DEPENDENCY_OBJECT,
-            name: packageName
-          })
-        }
-      });
-    }).on('error', err => {
-      reject(err);
-    });
-  })
-}
 
 /**
- * Constructs Promise array containing individual request for each package
+ * Gathers existing dependency information from README.md.
  * 
- * @param {string[]} packages 
- * @returns Promise.all for all packages
+ * If none are found, prompts the user if they want to add it.
  */
-function getAllPackageInformation(packages) {
-  const promises = [];
-
-  packages.forEach((package) => {
-    promises.push(getNPMPackage(package));
-  });
-
-  return Promise.all(promises).then((packageDetails) => {
-    return (packageDetails);
-  })
-}
-
-/**
- * Constructs markdown table
- * 
- * @param {*} packageArray 
- * @returns string version of markdown table
- */
-function createMarkdownTableString(packageArray) {
-  let table = constants.TABLE_HEADER;
-  packageArray.forEach(p => {
-    table += `[${p.name}](${p.npmLink})|${p.description}|${p.license}\n`
-  });
-  return table;
-}
-
-/**
- * Constructs full content of dependencies.md
- * 
- * @param {*} runtimeTable runtime dependency markdown table
- * @param {*} devTable development dependency markdown table
- * @returns 
- */
-function createMarkdown(runtimeTable, devTable) {
-  return `
-${constants.DEPENDENCY_HEADING}
-    
-The source of truth for this list is [package.json](./package.json)
-
-${constants.RUNTIME_DEPENDENCY_HEADING}
-
-${runtimeTable}
-
-${constants.DEVELOPMENT_DEPENDENCY_HEADING}
-
-${devTable}`;
-}
-
-/**
- * Append full dependency markdown to README.md
- * 
- * @param {string} markdown 
- */
-function appendMarkdownToREADME(markdown) {
-  fs.appendFile("./README.md", markdown, function (err) {
-    if (err) {
-      return console.log(err);
-    }
-    console.log("appended dependency tables to ./README.md");
-  });
+async function checkForExistingDependencyTables() {
+  existingDependenciesFromREADME = await getDependenciesFromREADME();
+  if (Object.keys(existingDependenciesFromREADME).length === 0) {
+    addDependenciesToREADME = await promptForNewDependencyTables();
+  } else {
+    addDependenciesToREADME = 'no';
+  }
 }
 
 (async () => {
-  let addDependenciesToREADME = false;
-  const { dependencies, devDependencies } = getAllPackages();
   try {
-    existingREADMEInfo = await getExistingPackages();
-    if (Object.keys(existingREADMEInfo)) {
-      addDependenciesToREADME = await promptForNewDependencyTables();
+    await checkForExistingDependencyTables();
+
+    if (addDependenciesToREADME === 'exit') {
+      return;
     }
-    const runtime = await getAllPackageInformation(dependencies);
-    const devDep = await getAllPackageInformation(devDependencies);
+
+    // Fetch all dependency information
+    const { dependencies, devDependencies } = utils.getDependenciesFromPackageJSON();
+    const runtime = await fetchAllDependencyInformation(dependencies, existingDependenciesFromREADME);
+    const devDep = await fetchAllDependencyInformation(devDependencies, existingDependenciesFromREADME);
 
     console.log(`Found ${runtime.length} packages in dependencies`);
     console.log(`Found ${devDep.length} packages in dev dependencies`);
 
-    if (addDependenciesToREADME) {
-      const runtimeTable = createMarkdownTableString(runtime);
-      const devTable = createMarkdownTableString(devDep);
-      const markdown = createMarkdown(runtimeTable, devTable);
+    // Create markdown tables for both runtime and development
+    const runtimeTable = utils.createMarkdownTableString(runtime);
+    const devTable = utils.createMarkdownTableString(devDep);
 
-      appendMarkdownToREADME(markdown)
+    if (addDependenciesToREADME === 'yes') {
+      await appendDependencies(runtimeTable, devTable);
+      console.log('Appended Dependency section to README.md')
+    } else if (addDependenciesToREADME === 'no') {
+      await overwriteExistingDependencyTables(runtimeTable, devTable);
+      console.log('Overwrote Dependency tables in README.md')
     }
-
-
   } catch (e) {
     throw new Error(e);
   }
