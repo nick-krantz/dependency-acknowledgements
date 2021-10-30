@@ -30,6 +30,9 @@ const REGEX_DEPENDENCY_URL = /\((.*?)\)/;
  */
 const TABLE_HEADER = 'Name | Description | License \n---- | ----------- | ------- \n';
 
+/**
+ * Markdown heading for the dependencies section.
+ */
 const DEPENDENCY_HEADING = '## Dependencies ';
 
 /**
