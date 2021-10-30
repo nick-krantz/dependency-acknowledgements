@@ -20,21 +20,20 @@ let existingDependenciesFromREADME = {};
 /**
  * When there isn't dependency tables found in the README.md,
  * prompt the user to see if they would like to add them.
- * 
+ *
  * Options:
- * 
+ *
  * 1. 'yes' - User wants to append tables to README.md.
  * 2. 'no' - There were existing tables found, overwrite them.
- * 3. 'exit' - There were no existing tables found & user responded no to appending them. 
- * 
+ * 3. 'exit' - There were no existing tables found & user responded no to appending them.
+ *
  * @type {types.PromptResponse}
  */
 let addDependenciesToREADME;
 
-
 /**
  * Gathers existing dependency information from README.md.
- * 
+ *
  * If none are found, prompts the user if they want to add it.
  */
 async function checkForExistingDependencyTables() {
@@ -51,16 +50,20 @@ async function checkForExistingDependencyTables() {
     await checkForExistingDependencyTables();
 
     if (addDependenciesToREADME === 'exit') {
+      console.log('No dependency tables were found, and the user selected declined them to be added.');
+      console.log('Exiting...');
       return;
     }
 
-    // Fetch all dependency information
+    // Fetch all dependency information from package.json
     const { dependencies, devDependencies } = utils.getDependenciesFromPackageJSON();
+
+    // Fetch all dependency information from either existing markdown or the api
     const runtime = await fetchAllDependencyInformation(dependencies, existingDependenciesFromREADME);
     const devDep = await fetchAllDependencyInformation(devDependencies, existingDependenciesFromREADME);
 
-    console.log(`Found ${runtime.length} packages in dependencies`);
-    console.log(`Found ${devDep.length} packages in dev dependencies`);
+    console.log(`Found ${runtime.length} packages in dependencies.`);
+    console.log(`Found ${devDep.length} packages in dev dependencies.`);
 
     // Create markdown tables for both runtime and development
     const runtimeTable = utils.createMarkdownTableString(runtime);
@@ -68,10 +71,10 @@ async function checkForExistingDependencyTables() {
 
     if (addDependenciesToREADME === 'yes') {
       await appendDependencies(runtimeTable, devTable);
-      console.log('Appended Dependency section to README.md')
+      console.log('Appended dependency section to README.md.');
     } else if (addDependenciesToREADME === 'no') {
       await overwriteExistingDependencyTables(runtimeTable, devTable);
-      console.log('Overwrote Dependency tables in README.md')
+      console.log('Overwrote dependency tables in README.md.');
     }
   } catch (e) {
     throw new Error(e);

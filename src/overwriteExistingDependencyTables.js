@@ -7,9 +7,9 @@ const readFileByLine = require('./readFileByLine');
 /**
  * Inserts new Runtime & Development table, overwriting the old tables.
  * Old table rows are processed but not added to the `newFile`.
- * 
+ *
  * @param {string} runtimeTable runtime dependency markdown table
- * @param {string} devTable development dependency markdown table 
+ * @param {string} devTable development dependency markdown table
  */
 async function overwriteExistingDependencyTables(runtimeTable, devTable) {
   let skipOldTableRows = false;
@@ -38,14 +38,13 @@ async function overwriteExistingDependencyTables(runtimeTable, devTable) {
 
     // When skipping old table rows
     if (skipOldTableRows) {
-
       // If there have been 2 empty lines, that assumes the end of the table
       // Reset tracking variables
       if (numberOfEmptyLines >= 2) {
         numberOfEmptyLines = 0;
         skipOldTableRows = false;
         newFile += `${line}\n`;
-        return
+        return;
       }
 
       // If the line is empty, increase the counter
@@ -57,9 +56,9 @@ async function overwriteExistingDependencyTables(runtimeTable, devTable) {
       // Add line to file
       newFile += `${line}\n`;
     }
-  })
+  });
 
-  await fs.writeFileSync('./README.md', newFile)
+  await fs.writeFileSync('./README.md', newFile);
 }
 
 module.exports = overwriteExistingDependencyTables;

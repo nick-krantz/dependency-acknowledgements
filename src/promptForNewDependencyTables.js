@@ -4,15 +4,15 @@ const types = require('./types');
 /**
  * Used when no dependencies have been found.
  * Prompts the user via the command line, asking if they want to append dependency tables to the README.
- * 
+ *
  * Resolves to true/false if tables should be appended to the README.
- * 
- * @returns {Promise<types.PromptResponse>} 
+ *
+ * @returns {Promise<types.PromptResponse>}
  */
 async function promptForNewDependencyTables() {
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
   return new Promise(function (resolve) {
@@ -23,7 +23,6 @@ async function promptForNewDependencyTables() {
       const answer = userInput.trim().toLowerCase();
       if (answer === '') {
         return resolve('yes');
-
       }
 
       if (answer === 'y' || answer === 'yes') {
