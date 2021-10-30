@@ -26,13 +26,17 @@ async function overwriteExistingDependencyTables(runtimeTable, devTable) {
       newFile += `${line}\n\n`;
 
       // Add the corresponding dependency table to new file string
-      if (line === constants.RUNTIME_DEPENDENCY_HEADING) {
+      if (line === constants.RUNTIME_DEPENDENCY_HEADING && runtimeTable) {
         newFile += `${runtimeTable}\n`;
-      } else {
-        newFile += `${devTable}\n`;
+        return;
       }
 
-      // Skip to next line
+      if (line === constants.DEVELOPMENT_DEPENDENCY_HEADING && devTable) {
+        newFile += `${devTable}\n`;
+        return;
+      }
+
+      // Skip to next line (shouldn't get to here, one of the above statements should be true)
       return;
     }
 

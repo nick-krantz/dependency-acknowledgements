@@ -58,9 +58,17 @@ async function checkForExistingDependencyTables() {
     // Fetch all dependency information from package.json
     const { dependencies, devDependencies } = utils.getDependenciesFromPackageJSON();
 
+    // See if any dependencies exist
+    if (dependencies.length === 0 && devDependencies.length === 0) {
+      console.log('No dependencies found package.json.');
+      console.log('Exiting...');
+      return;
+    }
+
     // Fetch all dependency information from either existing markdown or the api
     const runtime = await fetchAllDependencyInformation(dependencies, existingDependenciesFromREADME);
     const devDep = await fetchAllDependencyInformation(devDependencies, existingDependenciesFromREADME);
+
 
     console.log(`Found ${runtime.length} packages in dependencies.`);
     console.log(`Found ${devDep.length} packages in dev dependencies.`);

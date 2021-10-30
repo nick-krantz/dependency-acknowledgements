@@ -6,8 +6,8 @@ const types = require('./types');
  * Retrieves all package names from package.dependencies & package.devDependencies.
  */
 function getDependenciesFromPackageJSON() {
-  const dependencies = Object.keys(packageJSON.dependencies);
-  const devDependencies = Object.keys(packageJSON.devDependencies);
+  const dependencies = Object.keys(packageJSON.dependencies || {});
+  const devDependencies = Object.keys(packageJSON.devDependencies || {});
   return { dependencies, devDependencies };
 }
 
@@ -18,6 +18,8 @@ function getDependenciesFromPackageJSON() {
  * @returns string version of markdown table
  */
 function createMarkdownTableString(packageArray) {
+  if (packageArray.length === 0) return '';
+
   let table = constants.TABLE_HEADER;
   packageArray.forEach((p) => {
     table += `[${p.name}](${p.npmLink})|${p.description}|${p.license}\n`;
@@ -32,17 +34,17 @@ function createMarkdownTableString(packageArray) {
  * @param {string} devTable development dependency markdown table
  */
 function createFullDependencySection(runtimeTable, devTable) {
-  return `
-${constants.DEPENDENCY_HEADING}
-    
-The source of truth for this list is [package.json](./package.json)
+  let markdown = `${constants.DEPENDENCY_HEADING}\n\nThe source of truth for this list is [package.json](./package.json)\n\n`;
 
-${constants.RUNTIME_DEPENDENCY_HEADING}
+  if (runtimeTable) {
+    markdown += `${constants.RUNTIME_DEPENDENCY_HEADING}\n\n${runtimeTable}`
+  }
 
-${runtimeTable}
-${constants.DEVELOPMENT_DEPENDENCY_HEADING}
+  if (devTable) {
+    markdown += `${constants.DEVELOPMENT_DEPENDENCY_HEADING}\n\n${devTable}`
+  }
 
-${devTable}`;
+  return markdown
 }
 
 /**
