@@ -1,7 +1,7 @@
 {
-  "name": "dependency-acknowledgements",
+  "name": "dependency-tables",
   "version": "1.0.0",
-  "description": "Create dependencies.md containing acknowledgements to all packages in package.json",
+  "description": "Create dependency tables within a project's README.md acknowledging all dependencies in package.json",
   "main": "index.js",
   "scripts": {
     "generate-markdown": "index.js",

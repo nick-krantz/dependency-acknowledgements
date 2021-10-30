@@ -1,4 +1,4 @@
-# Dependency Acknowledgements
+# Dependency Tables
 
 Add or update existing dependency tables in a project's `README.md`. Each dependency row will include the dependency name (as a link to their npm page), a description and the associated license. 
 
@@ -11,7 +11,7 @@ Uses [npms](https://npms.io/) API to fetch dependency details.
 Run the following command from the same level of the project as `package.json` & `README.md`.
 
 ```
-npx github:nick-krantz/dependency-acknowledgements
+npx github:nick-krantz/dependency-tables
 ```
 
 ## How it works
