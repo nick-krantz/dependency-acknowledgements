@@ -50,3 +50,7 @@ Name | Description | License
 <!-- table rows -->
 
 ```
+
+## TODO
+
+- [ ] Handle cases where only one of `### Development Dependencies` or `### Runtime Dependencies` exists in the README, but the other needs to be added dynamically
