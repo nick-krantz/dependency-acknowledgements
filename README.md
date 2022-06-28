@@ -4,7 +4,7 @@ Add or update existing dependency tables in a project's `README.md`. Each depend
 
 When a project has existing tables, the existing information is used rather than fetching new information.
 
-Uses [npms](https://npms.io/) API to fetch dependency details.
+Uses [NPM Registry](https://registry.npmjs.org/) API to fetch dependency details.
 
 ## Usage
 
@@ -21,7 +21,7 @@ npx github:nick-krantz/dependency-tables
 3. Using the `dependencies` and `devDependencies` defined in `package.json` each dependency's information is fetched either by:  
   a. The existing table row in `README.md` with the matching name.  
   or  
-  b. The dependency information is fetched from [npms](https://npms.io/).  
+  b. The dependency information is fetched from [NPM Registry](https://registry.npmjs.org/).  
 4. Individual markdown sections & tables in string form are constructed.
 5. `README.md` is updated:  
   a. The dependency sections are appended if no sections were found originally (#2).  

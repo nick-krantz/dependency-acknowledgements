@@ -18,7 +18,7 @@ function getNPMPackage(dependencyName, existingDependencyInfo) {
 
     // Fetch dependency information from NPMS.
     https
-      .get(`https://api.npms.io/v2/package/${encodeURIComponent(dependencyName)}`, (res) => {
+      .get(`https://registry.npmjs.org/${dependencyName}`, (res) => {
         let data = [];
 
         res.on('data', (chunk) => {
@@ -27,12 +27,13 @@ function getNPMPackage(dependencyName, existingDependencyInfo) {
 
         res.on('end', () => {
           const response = JSON.parse(Buffer.concat(data).toString());
-          if (!response.code) {
+
+          if (!response?.error) {
             resolve({
-              name: response.collected.metadata.name,
-              npmLink: decodeURIComponent(response.collected.metadata.links.npm),
-              description: response.collected.metadata.description,
-              license: response.collected.metadata.license,
+              name: response?.name,
+              npmLink: response.homepage,
+              description: response.description,
+              license: response.license,
             });
           } else {
             console.warn('Could not find: ', dependencyName);
